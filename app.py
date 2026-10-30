@@ -48,7 +48,7 @@ with st.sidebar:
     st.header("Dit dokument")
     st.caption("Et nyt perspektiv starter med en PDF.")
     uploaded = st.file_uploader("Upload en PDF", type=["pdf"], max_upload_size=20, key=f"pdf-{st.session_state.get('upload_version', 0)}")
-    model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-3.8-flash"
+    model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-3.1-flash-lite"
     if not key:
         st.info("AI-svar er endnu ikke konfigureret. Du kan stadig søge i dokumentet.")
     consent = st.checkbox("Jeg accepterer, at mit spørgsmål og relevante tekstuddrag sendes til Google.")
@@ -121,6 +121,7 @@ if question:
     with st.chat_message("user"):
         st.write(question)
     with st.chat_message("assistant"):
+        sources = []
         try:
             with st.spinner("Finder relevante sider …"):
                 collection = database().get_collection(doc["collection"])
@@ -147,9 +148,22 @@ if question:
             show_sources(sources)
             st.session_state.messages.append({"role": "assistant", "content": answer, "sources": sources})
         except errors.APIError as exc:
-            if exc.code == 429:
-                st.warning("Den tilgængelige kvote er opbrugt eller midlertidigt begrænset. Vent og prøv igen. Appen skifter ikke til en betalt tjeneste.")
-            else:
-                st.error("Gemini kunne ikke svare. Kontrollér API-nøglen, modelnavnet og modellens tilgængelighed i Google AI Studio.")
+            answer = {
+                400: "Google afviste forespørgslen. Appens udvikler skal kontrollere API-opsætningen.",
+                401: "Google kunne ikke godkende API-nøglen. Appens udvikler skal kontrollere den.",
+                403: "API-nøglen har ikke adgang til den valgte model. Appens udvikler skal kontrollere adgangen.",
+                404: "Den valgte AI-model er ikke tilgængelig for denne konto. Appens udvikler skal opdatere modelvalget.",
+                429: "Den tilgængelige kvote er opbrugt eller midlertidigt begrænset. Vent og prøv igen. Appen skifter ikke til en betalt tjeneste.",
+                503: "Googles AI-model er midlertidigt overbelastet. Prøv igen om lidt. Du kan stadig læse de fundne tekstuddrag nedenfor.",
+                504: "Google nåede ikke at svare i tide. Prøv igen om lidt. Du kan stadig læse de fundne tekstuddrag nedenfor.",
+            }.get(exc.code, "Google kunne ikke gennemføre forespørgslen. Prøv igen om lidt.")
+            st.warning(answer)
+            if sources:
+                show_sources(sources)
+            st.session_state.messages.append({"role": "assistant", "content": answer, "sources": sources})
         except Exception:
-            st.error("Søgningen kunne ikke gennemføres. Kontrollér internetforbindelsen, og prøv igen.")
+            answer = "Forbindelsen eller søgningen kunne ikke gennemføres. Prøv igen om lidt."
+            st.error(answer)
+            if sources:
+                show_sources(sources)
+            st.session_state.messages.append({"role": "assistant", "content": answer, "sources": sources})

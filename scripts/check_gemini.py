@@ -11,7 +11,7 @@ key = (os.getenv("GEMINI_API_KEY") or config.get("GEMINI_API_KEY") or "").strip(
 print("Key configured:", bool(key))
 if not key:
     raise SystemExit(1)
-model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-3.8-flash"
+model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-3.1-flash-lite"
 print("Model:", model)
 try:
     with genai.Client(api_key=key, http_options=types.HttpOptions(timeout=60000)) as client:
