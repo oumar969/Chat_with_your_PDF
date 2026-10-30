@@ -9,10 +9,12 @@ from google import genai
 from google.genai import errors, types
 
 from rag import extract_pdf
+from ui import apply_style, navigation, welcome
 
 config = dotenv_values(Path(__file__).with_name(".env"))
 key = (os.getenv("GEMINI_API_KEY") or config.get("GEMINI_API_KEY") or "").strip()
 st.set_page_config(page_title="Chat med din PDF", page_icon="📖", layout="wide")
+apply_style()
 
 
 @st.cache_resource
@@ -40,27 +42,29 @@ def clear_document():
     st.session_state.messages = []
 
 
-st.title("📖 Chat med din PDF")
-st.caption("Find svar i dit dokument — og se de sider, svaret bygger på.")
+navigation()
 with st.sidebar:
+    st.markdown('''<div class="eyebrow">DIT ARBEJDSRUM</div>''', unsafe_allow_html=True)
     st.header("Dit dokument")
+    st.caption("Et nyt perspektiv starter med en PDF.")
     uploaded = st.file_uploader("Upload en PDF", type=["pdf"], max_upload_size=20, key=f"pdf-{st.session_state.get('upload_version', 0)}")
     model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-3.8-flash"
     if not key:
         st.info("AI-svar er endnu ikke konfigureret. Du kan stadig søge i dokumentet.")
-    st.caption("Brug en model med gratis kvote og undlad at aktivere betaling hos Google. Appen kan ikke kontrollere din kontos betalingsopsætning.")
     consent = st.checkbox("Jeg accepterer, at mit spørgsmål og relevante tekstuddrag sendes til Google.")
     st.caption("Brug offentlige øvelsesdokumenter. PDF og søgeindeks behandles lokalt; udvalgte uddrag sendes ved spørgsmål.")
     if st.button("Ryd dokument og samtale"):
         clear_document()
         st.session_state.upload_version = st.session_state.get("upload_version", 0) + 1
         st.rerun()
+    st.divider()
+    st.caption("Udviklet af oumar969 · Chat med din PDF")
 
 st.session_state.setdefault("messages", [])
 if uploaded is None:
     if "document" in st.session_state:
         clear_document()
-    st.info("Start med at uploade en PDF i venstre side. Du kan søge efter tekstuddrag uden en API-nøgle.")
+    welcome()
     st.stop()
 
 data = uploaded.getvalue()
@@ -91,6 +95,7 @@ if st.session_state.get("document", {}).get("hash") != fingerprint:
         st.stop()
 
 doc = st.session_state.document
+st.subheader("Dit dokument, i samtale.")
 st.caption(f"{uploaded.name} · {doc['pages']} sider · {doc['chunks']} tekstuddrag · lokalt søgeindeks")
 if doc["empty"]:
     st.warning(f"{doc['empty']} sider indeholder ingen læsbar tekst. Indhold på disse sider indgår ikke i søgningen.")
