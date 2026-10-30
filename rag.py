@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from io import BytesIO
 import re
+import unicodedata
 
 
 @dataclass(frozen=True)
@@ -9,6 +10,39 @@ class Chunk:
     text: str
     page: int
     filename: str
+
+
+def source_pages(chunks: list[Chunk], hit_ids: list[str], question: str, limit: int = 4) -> list[dict]:
+    """Retrieve small chunks, but give the model page context around each hit."""
+    phrases = re.findall(r"['‘’\"“”]([^'‘’\"“”]{3,})['‘’\"“”]", question)
+    normalize = lambda value: unicodedata.normalize("NFKC", value).casefold()
+    exact = [i for i, chunk in enumerate(chunks)
+             if any(normalize(phrase) in normalize(chunk.text) for phrase in phrases)]
+    ranked = list(dict.fromkeys(exact + [int(hit) for hit in hit_ids]))
+    sources = []
+    seen = set()
+    for index in ranked:
+        hit = chunks[index]
+        identity = (hit.filename, hit.page)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        page_text = ""
+        for chunk in chunks:
+            if (chunk.filename, chunk.page) != identity:
+                continue
+            overlap = next((n for n in range(min(len(page_text), len(chunk.text), 100), 0, -1)
+                            if page_text.endswith(chunk.text[:n])), 0)
+            page_text += chunk.text[overlap:] if overlap else (" " if page_text else "") + chunk.text
+        # Bound unusually dense pages while keeping the selected hit and its lead-in.
+        if len(page_text) > 12000:
+            position = page_text.find(hit.text)
+            start = max(0, position - 4000)
+            page_text = page_text[start:start + 12000]
+        sources.append({"filename": hit.filename, "page": hit.page, "text": page_text})
+        if len(sources) == limit:
+            break
+    return sources
 
 
 def split_page(text: str, size: int = 700, overlap: int = 100) -> list[str]:

@@ -8,7 +8,7 @@ from dotenv import dotenv_values
 from google import genai
 from google.genai import errors, types
 
-from rag import extract_pdf
+from rag import extract_pdf, source_pages
 from ui import apply_style, navigation, welcome
 
 config = dotenv_values(Path(__file__).with_name(".env"))
@@ -68,7 +68,7 @@ if uploaded is None:
     st.stop()
 
 data = uploaded.getvalue()
-fingerprint = hashlib.sha256(data + uploaded.name.encode()).hexdigest()
+fingerprint = hashlib.sha256(data + uploaded.name.encode() + b"page-context-v2").hexdigest()
 if st.session_state.get("document", {}).get("hash") != fingerprint:
     clear_document()
     try:
@@ -89,7 +89,7 @@ if st.session_state.get("document", {}).get("hash") != fingerprint:
             except Exception:
                 database().delete_collection(collection_name)
                 raise
-            st.session_state.document = {"hash": fingerprint, "collection": collection_name, "pages": pages, "empty": empty, "chunks": len(chunks)}
+            st.session_state.document = {"hash": fingerprint, "collection": collection_name, "pages": pages, "empty": empty, "chunks": len(chunks), "texts": chunks}
     except Exception as exc:
         st.error(f"PDF-filen kunne ikke klargøres: {exc}")
         st.stop()
@@ -128,8 +128,8 @@ if question:
         try:
             with st.spinner("Finder relevante sider …"):
                 collection = database().get_collection(doc["collection"])
-                result = collection.query(query_embeddings=encoder().encode([question], normalize_embeddings=True).tolist(), n_results=min(4, doc["chunks"]))
-                sources = [{**meta, "text": text} for meta, text in zip(result["metadatas"][0], result["documents"][0])]
+                result = collection.query(query_embeddings=encoder().encode([question], normalize_embeddings=True).tolist(), n_results=min(12, doc["chunks"]))
+                sources = source_pages(doc["texts"], result["ids"][0], question)
             if not key:
                 answer = "Her er de nærmeste tekstuddrag. AI-svar er endnu ikke konfigureret af appens udvikler."
             elif not consent:

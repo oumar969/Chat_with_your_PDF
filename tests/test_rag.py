@@ -1,6 +1,6 @@
 import unittest
 from io import BytesIO
-from rag import extract_pdf, split_page
+from rag import Chunk, extract_pdf, split_page, source_pages
 
 
 class ChunkTests(unittest.TestCase):
@@ -23,6 +23,24 @@ class ChunkTests(unittest.TestCase):
     def test_invalid_overlap(self):
         with self.assertRaises(ValueError):
             split_page("test", size=10, overlap=10)
+
+
+class ContextTests(unittest.TestCase):
+    def test_definition_before_matched_chunk_is_included(self):
+        text = "Popper favoured gradual reforms and feedback. " + "context " * 100 + "This is called piecemeal social engineering."
+        chunks = [Chunk(part, 4, "book.pdf") for part in split_page(text)]
+        sources = source_pages(chunks, [str(len(chunks) - 1)], "What is 'piecemeal social engineering'?")
+        self.assertIn("gradual reforms and feedback", sources[0]["text"])
+        self.assertEqual(sources[0]["text"], text)
+
+    def test_exact_phrase_ranks_before_semantic_hit_and_pages_deduplicate(self):
+        chunks = [Chunk("Unrelated material", 1, "a.pdf"), Chunk("piecemeal social engineering", 4, "a.pdf"), Chunk("Additional context", 4, "a.pdf")]
+        sources = source_pages(chunks, ["0", "1", "2"], "Explain ‘piecemeal social engineering’")
+        self.assertEqual([s["page"] for s in sources], [4, 1])
+
+    def test_unquoted_query_retains_semantic_order(self):
+        chunks = [Chunk("First", 1, "a.pdf"), Chunk("Second", 2, "a.pdf")]
+        self.assertEqual(source_pages(chunks, ["1", "0"], "Explain this", limit=1)[0]["page"], 2)
 
 
 class PdfTests(unittest.TestCase):
