@@ -28,6 +28,7 @@ Vælg en model med gratis kvote på din konto. Standardmodel kan ændres med `GE
 - Sidebevarende tekststykker med overlap og lokal vektorsøgning.
 - Søgning uden API-nøgle; AI-svar kræver nøgle og aktiv accept af deling.
 - Fundne uddrag med filnavn og PDF-sidetal (ikke trykt sidenummer).
+- AI-svar er som udgangspunkt 2–4 konkrete sætninger på dansk. Kildeuddrag åbnes kun efter behov under “Se kilder”.
 - Indekser er i RAM og isoleret med unikke samlingsnavne pr. session. Modelcache er lokal i `.models/`.
 - Chatten vises som historik, men hvert spørgsmål behandles selvstændigt.
 - Scannede sider kræver OCR og understøttes endnu ikke. Tabeller og flerspaltet tekst kan blive læst forkert.
