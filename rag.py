@@ -99,12 +99,14 @@ def split_page(text: str, size: int = 700, overlap: int = 100) -> list[str]:
     return chunks
 
 
-def extract_pdf(data: bytes, filename: str) -> tuple[list[Chunk], int, int]:
+def extract_pdf(
+    data: bytes, filename: str, *, max_upload_bytes=MAX_UPLOAD_BYTES, max_pages=MAX_PAGES, max_text_chars=MAX_TEXT_CHARS
+) -> tuple[list[Chunk], int, int]:
     from pypdf import PdfReader
     from pypdf.errors import PdfReadError
 
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise DocumentError("PDF-filen må højst fylde 20 MB.")
+    if len(data) > max_upload_bytes:
+        raise DocumentError(f"PDF-filen må højst fylde {max_upload_bytes // (1024 * 1024)} MB.")
     if not data.lstrip().startswith(b"%PDF-"):
         raise DocumentError("Filen er ikke en gyldig PDF.")
     try:
@@ -113,15 +115,15 @@ def extract_pdf(data: bytes, filename: str) -> tuple[list[Chunk], int, int]:
         raise DocumentError("PDF-filen er beskadiget eller ugyldig.") from None
     if reader.is_encrypted and not reader.decrypt(""):
         raise DocumentError("PDF-filen er beskyttet med adgangskode.")
-    if len(reader.pages) > MAX_PAGES:
-        raise DocumentError("Vælg en PDF med højst 200 sider i denne første version.")
+    if len(reader.pages) > max_pages:
+        raise DocumentError(f"Vælg en PDF med højst {max_pages} sider.")
     chunks = []
     empty_pages = 0
     total_chars = 0
     for number, page in enumerate(reader.pages, 1):
         text = page.extract_text() or ""
         total_chars += len(text)
-        if total_chars > MAX_TEXT_CHARS:
+        if total_chars > max_text_chars:
             raise DocumentError("PDF-filen indeholder for meget tekst. Opdel den i mindre dokumenter.")
         parts = split_page(text)
         empty_pages += not bool(parts)

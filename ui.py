@@ -21,7 +21,7 @@ def navigation():
     )
 
 
-def welcome():
+def welcome(max_pages=200, max_mb=20):
     paths = "".join(
         f'<path d="M -50 {30 + i * 15} C 140 {30 + i * 8}, 180 {280 + i * 5}, 440 {200 + i * 5} S 700 {200 + i * 9}, 900 {100 + i * 12}" />'
         for i in range(9)
@@ -42,7 +42,7 @@ def welcome():
           <div class="feature-art source-art"><div class="source-paper"><span class="paper-heading">Dit dokument</span><i></i><i></i><i class="highlight"></i><i></i><div class="page-tag">↗ Side 12</div></div></div>
           <div class="feature-copy"><span class="card-kicker">02 / FIND KILDEN</span><h3>Se, hvor svaret kommer fra.</h3><p>Åbn tekstuddrag og sidetal, og kontrollér selv kilden.</p></div>
         </article>
-        <article class="feature small-feature"><div class="mini-icon">▤</div><h3>Din PDF, samlet ét sted.</h3><p>Upload et dokument på op til 200 sider og 20 MB.</p><span class="mini-tag">PDF → overblik</span></article>
+        <article class="feature small-feature"><div class="mini-icon">▤</div><h3>Din PDF, samlet ét sted.</h3><p>Upload et dokument på op til {max_pages} sider og {max_mb} MB.</p><span class="mini-tag">PDF → overblik</span></article>
         <article class="feature small-feature"><div class="mini-icon">⌕</div><h3>Find mening mellem linjerne.</h3><p>Lokal søgning finder de tekstuddrag, der ligger tæt på dit spørgsmål.</p><span class="mini-tag">Søg med egne ord</span></article>
         <article class="feature small-feature"><div class="mini-icon">↗</div><h3>Du vælger, hvad der deles.</h3><p>AI får først dit spørgsmål og udvalgte uddrag, når du accepterer deling.</p><span class="mini-tag">Du har kontrollen</span></article>
       </div>

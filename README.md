@@ -8,6 +8,8 @@ Dansk RAG-prototype med kildeuddrag og sidetal. Dokumenter indekseres lokalt med
 
 ## Start på Windows
 
+Vil du teste via et offentligt link? Se [gratis Render-testdeployment](docs/render.md). Profilen er defineret i `render.yaml` og bruger lettere ord- og frasesøgning for at undgå den tunge lokale model på en lille gratis server.
+
 Verificeret med Python 3.14 på Windows. `requirements.lock` fastholder de præcise pakkeversioner; `requirements.txt` angiver de direkte afhængigheder.
 
 ```powershell

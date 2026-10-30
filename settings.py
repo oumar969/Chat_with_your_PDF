@@ -22,6 +22,7 @@ class Settings:
     model: str = "gemini-3.1-flash-lite"
     embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     embedding_revision: str = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
+    retrieval_mode: str = "semantic"
 
     @classmethod
     def load(cls):
@@ -29,4 +30,5 @@ class Settings:
         return cls(
             api_key=(os.getenv("GEMINI_API_KEY") or local.get("GEMINI_API_KEY") or "").strip(),
             model=(os.getenv("GEMINI_MODEL") or local.get("GEMINI_MODEL") or cls.model).strip(),
+            retrieval_mode=(os.getenv("RETRIEVAL_MODE") or local.get("RETRIEVAL_MODE") or "semantic").strip(),
         )

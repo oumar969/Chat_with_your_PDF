@@ -8,12 +8,14 @@ import time
 import streamlit as st
 
 from ai_service import AnswerError, generate_answer
+from lexical import LexicalIndex
 from rag import DocumentError, extract_pdf, source_pages
 from settings import MAX_MESSAGES, PIPELINE_VERSION, REQUEST_COOLDOWN_SECONDS, ROOT, Settings
 from storage import SessionDatabase
 from ui import apply_style, navigation, welcome
 
 settings = Settings.load()
+lightweight = settings.retrieval_mode == "lexical"
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
 st.set_page_config(page_title="Chat med din PDF", page_icon="📖", layout="wide")
@@ -43,7 +45,7 @@ def database():
 
 def clear_document():
     previous = st.session_state.pop("document", None)
-    if previous:
+    if previous and previous.get("collection"):
         database().delete_collection(previous["collection"])
     st.session_state.messages = []
 
@@ -67,11 +69,16 @@ with st.sidebar:
     st.header("Dit dokument")
     st.caption("Et nyt perspektiv starter med en PDF.")
     uploaded = st.file_uploader(
-        "Upload en PDF", type=["pdf"], max_upload_size=20, key=f"pdf-{st.session_state.get('upload_version', 0)}"
+        "Upload en PDF",
+        type=["pdf"],
+        max_upload_size=5 if lightweight else 20,
+        key=f"pdf-{st.session_state.get('upload_version', 0)}",
     )
     if not settings.api_key:
         st.info("AI-svar er endnu ikke konfigureret. Du kan stadig søge i dokumentet.")
     consent = st.checkbox("Jeg accepterer, at mit spørgsmål og relevante tekstuddrag sendes til Google.")
+    if lightweight:
+        st.caption("Let testversion: ord- og frasesøgning · højst 5 MB og 60 sider.")
     st.caption(
         "Brug offentlige øvelsesdokumenter. PDF og søgeindeks behandles lokalt; udvalgte uddrag sendes ved spørgsmål."
     )
@@ -86,19 +93,29 @@ st.session_state.setdefault("messages", [])
 if uploaded is None:
     if "document" in st.session_state:
         clear_document()
-    welcome()
+    welcome(max_pages=60 if lightweight else 200, max_mb=5 if lightweight else 20)
     st.stop()
 
 data = uploaded.getvalue()
 fingerprint = hashlib.sha256(
-    data + uploaded.name.encode() + (PIPELINE_VERSION + settings.embedding_model + settings.embedding_revision).encode()
+    data
+    + uploaded.name.encode()
+    + (PIPELINE_VERSION + settings.embedding_model + settings.embedding_revision + settings.retrieval_mode).encode()
 ).hexdigest()
 if st.session_state.get("document", {}).get("hash") != fingerprint:
     clear_document()
     try:
-        with st.spinner("Læser PDF og bygger lokalt søgeindeks. Første gang hentes en gratis sprogmodel …"):
-            chunks, pages, empty = extract_pdf(data, uploaded.name)
-            collection_name = database().index_chunks(chunks, embed)
+        with st.spinner(
+            "Læser PDF og bygger søgeindeks …"
+            if lightweight
+            else "Læser PDF og bygger lokalt søgeindeks. Første gang hentes en gratis sprogmodel …"
+        ):
+            limits = (
+                {"max_upload_bytes": 5 * 1024 * 1024, "max_pages": 60, "max_text_chars": 300_000} if lightweight else {}
+            )
+            chunks, pages, empty = extract_pdf(data, uploaded.name, **limits)
+            lexical_index = LexicalIndex(chunks) if lightweight else None
+            collection_name = None if lightweight else database().index_chunks(chunks, embed)
             st.session_state.document = {
                 "hash": fingerprint,
                 "collection": collection_name,
@@ -106,6 +123,7 @@ if st.session_state.get("document", {}).get("hash") != fingerprint:
                 "empty": empty,
                 "chunks": len(chunks),
                 "texts": chunks,
+                "lexical_index": lexical_index,
             }
     except DocumentError as exc:
         st.error(f"PDF-filen kunne ikke klargøres: {exc}")
@@ -145,9 +163,15 @@ if question and question.strip():
         sources = []
         try:
             with st.spinner("Finder relevante sider …"):
-                collection = database().get_collection(doc["collection"])
-                result = collection.query(query_embeddings=embed([question]).tolist(), n_results=min(12, doc["chunks"]))
-                sources = source_pages(doc["texts"], result["ids"][0], question)
+                if lightweight:
+                    hit_ids = doc["lexical_index"].search(question)
+                else:
+                    collection = database().get_collection(doc["collection"])
+                    result = collection.query(
+                        query_embeddings=embed([question]).tolist(), n_results=min(12, doc["chunks"])
+                    )
+                    hit_ids = result["ids"][0]
+                sources = source_pages(doc["texts"], hit_ids, question)
             if not settings.api_key:
                 answer = "Her er de nærmeste tekstuddrag. AI-svar er endnu ikke konfigureret af appens udvikler."
             elif not consent:
