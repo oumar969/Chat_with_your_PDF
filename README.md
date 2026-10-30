@@ -14,11 +14,13 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Upload en PDF. Første indeksering henter embedding-modellen fra Hugging Face; efterfølgende embeddings beregnes lokalt. API-nøglen kan indtastes i sidepanelet. Alternativt kopieres `.env.example` til `.env`, og nøglen indsættes dér. Del aldrig din nøgle i Git eller screenshots.
+Kopiér `.env.example` til `.env` i projektmappen og indsæt din nøgle efter `GEMINI_API_KEY=`. Appen læser nøglen på serveren; den indtastes ikke på hjemmesiden. `.env` er udeladt fra Git. Del aldrig din nøgle i Git eller screenshots. Ved hosting sættes `GEMINI_API_KEY` som en miljøvariabel på serveren.
+
+Upload en PDF. Første indeksering henter embedding-modellen fra Hugging Face; efterfølgende embeddings beregnes lokalt. Genindlæs siden, efter du har ændret `.env`.
 
 Opret nøgle: https://aistudio.google.com/apikey
 
-Vælg en model med gratis kvote på din konto. Standardmodel kan ændres i sidepanelet eller med `GEMINI_MODEL`. Aktivér ikke betalt fakturering, hvis projektet skal koste 0 kr. Appen kan ikke kontrollere Google-kontoens faktureringsstatus; gratis kvoter og modeltilgængelighed kan ændres. Ingen automatisk betalt fallback.
+Vælg en model med gratis kvote på din konto. Standardmodel kan ændres med `GEMINI_MODEL` i `.env` eller serverens miljøvariabler. Aktivér ikke betalt fakturering, hvis projektet skal koste 0 kr. Appen kan ikke kontrollere Google-kontoens faktureringsstatus; gratis kvoter og modeltilgængelighed kan ændres. Ingen automatisk betalt fallback.
 
 ## Funktioner og begrænsninger
 

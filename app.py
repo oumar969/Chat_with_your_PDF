@@ -1,15 +1,17 @@
 import hashlib
 import os
 import uuid
+from pathlib import Path
 
 import streamlit as st
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 from google import genai
 from google.genai import errors, types
 
 from rag import extract_pdf
 
-load_dotenv()
+config = dotenv_values(Path(__file__).with_name(".env"))
+key = (os.getenv("GEMINI_API_KEY") or config.get("GEMINI_API_KEY") or "").strip()
 st.set_page_config(page_title="Chat med din PDF", page_icon="📖", layout="wide")
 
 
@@ -43,9 +45,9 @@ st.caption("Find svar i dit dokument — og se de sider, svaret bygger på.")
 with st.sidebar:
     st.header("Dit dokument")
     uploaded = st.file_uploader("Upload en PDF", type=["pdf"], max_upload_size=20, key=f"pdf-{st.session_state.get('upload_version', 0)}")
-    key = st.text_input("Gemini API-nøgle", type="password", value=os.getenv("GEMINI_API_KEY", ""))
-    st.markdown("[Hent en API-nøgle i Google AI Studio](https://aistudio.google.com/apikey)")
-    model = st.text_input("Gemini-model", value=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+    model = os.getenv("GEMINI_MODEL") or config.get("GEMINI_MODEL") or "gemini-2.5-flash"
+    if not key:
+        st.info("AI-svar er endnu ikke konfigureret. Du kan stadig søge i dokumentet.")
     st.caption("Brug en model med gratis kvote og undlad at aktivere betaling hos Google. Appen kan ikke kontrollere din kontos betalingsopsætning.")
     consent = st.checkbox("Jeg accepterer, at mit spørgsmål og relevante tekstuddrag sendes til Google.")
     st.caption("Brug offentlige øvelsesdokumenter. PDF og søgeindeks behandles lokalt; udvalgte uddrag sendes ved spørgsmål.")
@@ -119,8 +121,10 @@ if question:
                 collection = database().get_collection(doc["collection"])
                 result = collection.query(query_embeddings=encoder().encode([question], normalize_embeddings=True).tolist(), n_results=min(4, doc["chunks"]))
                 sources = [{**meta, "text": text} for meta, text in zip(result["metadatas"][0], result["documents"][0])]
-            if not key or not consent:
-                answer = "Her er de nærmeste tekstuddrag. Tilføj din Gemini API-nøgle og acceptér deling i sidepanelet for at få et formuleret AI-svar."
+            if not key:
+                answer = "Her er de nærmeste tekstuddrag. AI-svar er endnu ikke konfigureret af appens udvikler."
+            elif not consent:
+                answer = "Her er de nærmeste tekstuddrag. Acceptér deling i sidepanelet for at få et formuleret AI-svar."
             else:
                 context = "\n\n".join(f"[{i}] Side {s['page']}:\n{s['text']}" for i, s in enumerate(sources, 1))
                 with st.spinner("Skriver svar …"):
