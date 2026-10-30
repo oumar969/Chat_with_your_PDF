@@ -4,6 +4,7 @@ gatherUsageStats = false
 [server]
 address = "localhost"
 maxUploadSize = 20
+fileWatcherType = "poll"
 
 [theme]
 primaryColor = "#0F766E"

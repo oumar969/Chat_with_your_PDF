@@ -1,4 +1,5 @@
 """Check server credentials without printing secrets."""
+
 import os
 from pathlib import Path
 

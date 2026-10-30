@@ -6,11 +6,11 @@ Dansk RAG-prototype med kildeuddrag og sidetal. Dokumenter indekseres lokalt med
 
 ## Start på Windows
 
-Anbefalet: Python 3.11 eller 3.12 (afhængighedernes understøttelse af nyere Python-versioner varierer).
+Verificeret med Python 3.14 på Windows. `requirements.lock` fastholder de præcise pakkeversioner; `requirements.txt` angiver de direkte afhængigheder.
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
@@ -24,20 +24,23 @@ Vælg en model med gratis kvote på din konto. Standardmodel kan ændres med `GE
 
 ## Funktioner og begrænsninger
 
-- Én PDF ad gangen, højst 20 MB og 200 sider.
+- Én PDF ad gangen, højst 20 MB, 200 sider og 2 millioner udtrukne tegn.
 - Sidebevarende tekststykker med overlap og lokal vektorsøgning.
 - Søgning uden API-nøgle; AI-svar kræver nøgle og aktiv accept af deling.
 - Fundne uddrag med filnavn og PDF-sidetal (ikke trykt sidenummer).
 - AI-svar er som udgangspunkt 2–4 konkrete sætninger på dansk. Kildeuddrag åbnes kun efter behov under “Se kilder”.
-- Indekser er i RAM og isoleret med unikke samlingsnavne pr. session. Modelcache er lokal i `.models/`.
+- Indekser er i RAM med adgangskontrol pr. session og oprydning ved rydning, dokumentskift og frigivelse af sessionsressourcer. Modelcache er lokal i `.models/` og modelrevisionen er fastlåst.
 - Chatten vises som historik, men hvert spørgsmål behandles selvstændigt.
 - Scannede sider kræver OCR og understøttes endnu ikke. Tabeller og flerspaltet tekst kan blive læst forkert.
-- Citater genereres af modellen og er ikke automatisk verificeret. Et afslag på ubesvarlige spørgsmål er instrueret, men ikke garanteret.
+- Strukturerede AI-svar valideres: hver påstand skal henvise til en eksisterende kilde. Det beviser ikke, at kilden faktisk understøtter påstanden. Afslag på ubesvarlige spørgsmål er ikke garanteret.
+- Højst fire kilder og 24.000 tegn sendes pr. forespørgsel. Timeout er 60 sekunder uden automatiske genforsøg. Der er 10 sekunders pause mellem spørgsmål pr. session og højst 20 beskeder i historikken.
 - Brug offentlige øvelsesdokumenter; gennemgå udbyderens datavilkår før brug af personlige dokumenter.
 
 ## Arkitektur
 
-PDF → pypdf → tekststykker med sidetal → lokale flersprogede embeddings → Chroma → fire uddrag → Gemini → svar + kildeuddrag.
+PDF → validering → normaliserede tekststykker → lokale embeddings → sessionsafgrænset Chroma → sidekontekst → Gemini → valideret svarstruktur + kilder.
+
+Læs [arkitektur og driftsforudsætninger](docs/architecture.md). Dette er en lokal portfolio-demo. Offentlig drift med vilkårlige uploads kræver blandt andet isoleret PDF-behandling, login og begrænsning af forbrug på tværs af sessioner.
 
 Orkestreringen er almindelig Python, så dataflowet er let at forstå og fejlfinde. LangChain er ikke nødvendigt for denne første version.
 
@@ -45,6 +48,11 @@ Orkestreringen er almindelig Python, så dataflowet er let at forstå og fejlfin
 
 ```powershell
 python -m unittest discover -s tests
+python -m scripts.verify_pipeline
 ```
+
+Pipeline-testen bruger en syntetisk PDF og den lokalt cachede embedding-model. Tilføj `--live` for eksplicit at sende ét syntetisk spørgsmål og testuddrag til Gemini. Der sendes ingen brugerfiler. Syntetiske resultater er regressionstests, ikke et mål for generel svarkvalitet.
+
+Kodekontrol: installér `ruff==0.17.3` og kør `python -m ruff check .`. GitHub Actions kører kodekontrol, dependency-check og tests uden API-nøgle eller modeldownloads.
 
 Manuel afprøvning: upload en tekst-PDF, spørg efter en konkret oplysning, kontrollér sidetallet, og stil derefter et spørgsmål uden svar i dokumentet. Prøv også en scannet PDF, et dokumentbytte og en ugyldig API-nøgle. Afprøv på rigtige dokumenter før offentlig demo.

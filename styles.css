@@ -50,6 +50,7 @@
 .page-footer { display: flex; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 35px; padding-top: 20px; color: #8a918b; font-size: 10px; gap: 15px; }.page-footer a { color: #4d7059; text-decoration: none; }
 [data-testid="stChatMessage"] { background: #f7f9f5; border: 1px solid #e9eee5; border-radius: 12px; }
 [data-testid="stChatInput"] { border-radius: 20px; }
+[data-testid="stChatMessage"] [data-testid="stText"] { font-family: inherit; font-size: 15px; line-height: 1.75; }
 @media (max-width: 900px) { [data-testid="stMainBlockContainer"] { padding: 2rem 1.5rem; }.nav-caption { display: none; }.welcome h1 { letter-spacing: -2.5px; }.section-label > span { display: none; }.feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.feature-main { grid-column: span 2; }.feature-source { grid-column: span 2; }.source-art { height: 150px; }.small-feature:last-child { grid-column: span 2; } }
 @media (max-width: 520px) { .topbar { margin-bottom: 32px; }.feature-grid { display: flex; flex-direction: column; }.desktop-break { display: none; }.welcome h1 { font-size: 47px; }.question-pill { font-size: 10px; padding: 12px; gap: 7px; }.question-pill b { padding-left: 0; }.section-label h2 { font-size: 18px; }.page-footer { flex-direction: column; }.start-hint { font-size: 10px; } }
 
