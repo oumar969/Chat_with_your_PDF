@@ -2,6 +2,8 @@
 
 Udviklet af [oumar969](https://github.com/oumar969).
 
+[Projektets GitHub Pages-side](https://oumar969.github.io/Chat_with_your_PDF/) viser et interaktivt, forhåndsskrevet eksempel og beskriver arkitekturen. Den fulde Python-app køres lokalt som beskrevet nedenfor. Sidens kildefiler ligger i `docs/`, som publiceres fra `main` via GitHub Pages.
+
 Dansk RAG-prototype med kildeuddrag og sidetal. Dokumenter indekseres lokalt med en flersproget Sentence Transformers-model og Chroma. Kun spørgsmålet og de fire fundne uddrag sendes til Gemini, når brugeren accepterer det.
 
 ## Start på Windows
