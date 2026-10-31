@@ -2,9 +2,9 @@
 
 Udviklet af [oumar969](https://github.com/oumar969).
 
-[Prøv appen online på Render](https://pdfsamtale.onrender.com/) · [Projektets GitHub Pages-side](https://oumar969.github.io/Chat_with_your_PDF/)
+[Prøv appen online på Render](https://pdfsamtale.onrender.com/) · [Se projektet i portfolioen](https://oumar969.github.io/#work)
 
-Render kører den lette testversion med ord- og frasesøgning (5 MB, 60 sider). Den kan bruge cirka ét minut på at vågne efter dvale. GitHub Pages præsenterer projektet og arkitekturen og linker direkte til live-appen. Den fulde version med semantisk søgning kan køres lokalt som beskrevet nedenfor. Sidens kildefiler ligger i `docs/`, som publiceres fra `main` via GitHub Pages.
+Render kører den lette testversion med ord- og frasesøgning (5 MB, 60 sider). Den kan bruge cirka ét minut på at vågne efter dvale. Projektet præsenteres under Work på hovedportfolioen med links til prototypen og kildekoden. Den separate GitHub Pages-side for dette repository er afpubliceret. Den fulde version med semantisk søgning kan køres lokalt som beskrevet nedenfor.
 
 Dansk RAG-prototype med kildeuddrag og sidetal. Dokumenter indekseres lokalt med en flersproget Sentence Transformers-model og Chroma. Kun spørgsmålet og de fire fundne uddrag sendes til Gemini, når brugeren accepterer det.
 

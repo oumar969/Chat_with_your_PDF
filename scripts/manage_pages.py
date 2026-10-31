@@ -15,7 +15,9 @@ API = f"https://api.github.com/repos/{REPO}"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--enable", action="store_true")
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument("--enable", action="store_true")
+    actions.add_argument("--disable", action="store_true")
     args = parser.parse_args()
     result = subprocess.run(
         ["git", "credential", "fill"],
@@ -51,6 +53,21 @@ def main():
             return exc.code, {}
 
     status, site = request("/pages")
+    if args.disable:
+        if status not in (200, 404):
+            raise SystemExit(f"Cannot verify project Pages site: HTTP {status}")
+        if status == 200:
+            removed_status, _ = request("/pages", "DELETE")
+            print("Project Pages unpublish HTTP status:", removed_status)
+            if removed_status != 204:
+                raise SystemExit(1)
+        homepage_status, _ = request("", "PATCH", {"homepage": "https://pdfsamtale.onrender.com/"})
+        print("Repository homepage HTTP status:", homepage_status)
+        status, _ = request("/pages")
+        print("Project Pages verification HTTP status:", status)
+        if status != 404 or homepage_status != 200:
+            raise SystemExit(1)
+        return
     if args.enable:
         body = {"build_type": "legacy", "source": {"branch": "main", "path": "/docs"}}
         status, site = request("/pages", "POST" if status == 404 else "PUT", body)
